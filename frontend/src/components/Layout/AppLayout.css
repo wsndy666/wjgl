@@ -1,0 +1,248 @@
+.app-layout {
+  height: 100vh;
+  overflow: hidden;
+}
+
+.app-sider {
+  background: #fff;
+  border-right: 1px solid #f0f0f0;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.06);
+}
+
+.sider-header {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid #f0f0f0;
+  background: #fafafa;
+}
+
+.logo {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1890ff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sider-menu {
+  border-right: none;
+  background: #fff;
+}
+
+.sider-menu .ant-menu-item {
+  margin: 4px 8px;
+  border-radius: 6px;
+  height: 40px;
+  line-height: 40px;
+}
+
+.sider-menu .ant-menu-item-selected {
+  background: #e6f7ff;
+  color: #1890ff;
+}
+
+.sider-menu .ant-menu-item:hover {
+  background: #f5f5f5;
+}
+
+.app-main {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.app-header {
+  background: #fff;
+  border-bottom: 1px solid #f0f0f0;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+}
+
+.breadcrumb {
+  font-size: 16px;
+  font-weight: 500;
+  color: #262626;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.header-action {
+  color: #8c8c8c;
+  border: none;
+  box-shadow: none;
+}
+
+.header-action:hover {
+  color: #1890ff;
+  background: #f5f5f5;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.user-info:hover {
+  background: #f5f5f5;
+}
+
+.username {
+  font-size: 14px;
+  color: #262626;
+  font-weight: 500;
+}
+
+.app-content {
+  flex: 1;
+  overflow: auto;
+  background: #f5f5f5;
+}
+
+/* 移动端样式 */
+.mobile-header {
+  background: #fff;
+  border-bottom: 1px solid #f0f0f0;
+  padding: 0 16px;
+  height: 56px;
+  line-height: 56px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.mobile-header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%;
+}
+
+.mobile-menu-button {
+  color: #262626;
+  border: none;
+  box-shadow: none;
+  font-size: 18px;
+}
+
+.mobile-header-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #262626;
+  flex: 1;
+  text-align: center;
+  margin: 0 16px;
+}
+
+.mobile-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mobile-drawer .ant-drawer-body {
+  padding: 0;
+}
+
+.mobile-menu {
+  border-right: none;
+  background: #fff;
+}
+
+.mobile-menu .ant-menu-item {
+  margin: 0;
+  border-radius: 0;
+  height: 48px;
+  line-height: 48px;
+  padding-left: 24px;
+}
+
+.mobile-menu .ant-menu-item-selected {
+  background: #e6f7ff;
+  color: #1890ff;
+}
+
+.mobile-menu .ant-menu-item:hover {
+  background: #f5f5f5;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .app-main {
+    padding-top: 56px;
+  }
+  
+  .app-content {
+    height: calc(100vh - 56px);
+  }
+}
+
+/* 深色模式支持 */
+@media (prefers-color-scheme: dark) {
+  .app-sider {
+    background: #141414;
+    border-right-color: #303030;
+  }
+  
+  .sider-header {
+    background: #1f1f1f;
+    border-bottom-color: #303030;
+  }
+  
+  .logo {
+    color: #1890ff;
+  }
+  
+  .app-header {
+    background: #141414;
+    border-bottom-color: #303030;
+  }
+  
+  .breadcrumb {
+    color: #fff;
+  }
+  
+  .user-info {
+    color: #fff;
+  }
+  
+  .username {
+    color: #fff;
+  }
+  
+  .app-content {
+    background: #000;
+  }
+  
+  .mobile-header {
+    background: #141414;
+    border-bottom-color: #303030;
+  }
+  
+  .mobile-header-title {
+    color: #fff;
+  }
+}

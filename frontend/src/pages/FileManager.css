@@ -1,0 +1,343 @@
+.file-manager {
+  padding: 24px;
+  background: #f5f5f5;
+  min-height: 100vh;
+}
+
+.file-manager-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 16px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.file-manager-actions {
+  margin-bottom: 16px;
+  padding: 16px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.file-list-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.file-name-cell {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.file-icon {
+  font-size: 20px;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.file-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.file-name {
+  font-weight: 500;
+  color: #262626;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.locked-icon {
+  color: #faad14;
+  font-size: 12px;
+}
+
+.file-description {
+  color: #8c8c8c;
+  font-size: 12px;
+  margin-top: 2px;
+  line-height: 1.4;
+}
+
+.file-tags {
+  margin-top: 4px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+.file-tags .ant-tag {
+  margin: 0;
+  font-size: 10px;
+  padding: 1px 4px;
+  line-height: 1.2;
+}
+
+/* 表格样式优化 */
+.ant-table-thead > tr > th {
+  background: #fafafa;
+  font-weight: 600;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.ant-table-tbody > tr:hover > td {
+  background: #f5f5f5;
+}
+
+.ant-table-tbody > tr.ant-table-row-selected > td {
+  background: #e6f7ff;
+}
+
+.ant-table-tbody > tr.ant-table-row-selected:hover > td {
+  background: #bae7ff;
+}
+
+/* 上传区域样式 */
+.ant-upload-drag {
+  border: 2px dashed #d9d9d9;
+  border-radius: 8px;
+  background: #fafafa;
+  transition: all 0.3s;
+}
+
+.ant-upload-drag:hover {
+  border-color: #1890ff;
+  background: #f0f8ff;
+}
+
+.ant-upload-drag-icon {
+  font-size: 48px;
+  color: #1890ff;
+  margin-bottom: 16px;
+}
+
+.ant-upload-text {
+  font-size: 16px;
+  color: #262626;
+  margin-bottom: 8px;
+}
+
+.ant-upload-hint {
+  font-size: 14px;
+  color: #8c8c8c;
+}
+
+/* 模态框样式 */
+.ant-modal-header {
+  border-bottom: 1px solid #f0f0f0;
+  padding: 16px 24px;
+}
+
+.ant-modal-title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.ant-modal-body {
+  padding: 24px;
+}
+
+.ant-modal-footer {
+  border-top: 1px solid #f0f0f0;
+  padding: 12px 24px;
+  text-align: right;
+}
+
+/* 按钮组样式 */
+.ant-btn-group .ant-btn {
+  margin-right: 0;
+}
+
+.ant-btn-group .ant-btn:not(:last-child) {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.ant-btn-group .ant-btn:not(:first-child) {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-left: 0;
+}
+
+/* 分页样式 */
+.ant-pagination {
+  margin-top: 16px;
+  text-align: center;
+}
+
+.ant-pagination-total-text {
+  color: #8c8c8c;
+  font-size: 14px;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .file-manager {
+    padding: 16px;
+  }
+  
+  .file-manager-toolbar {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+  
+  .toolbar-left,
+  .toolbar-right {
+    justify-content: center;
+  }
+  
+  .file-manager-actions {
+    overflow-x: auto;
+  }
+  
+  .file-manager-actions .ant-space {
+    flex-wrap: nowrap;
+    min-width: max-content;
+  }
+  
+  .ant-table {
+    font-size: 12px;
+  }
+  
+  .ant-table-thead > tr > th {
+    padding: 8px 4px;
+    font-size: 12px;
+  }
+  
+  .ant-table-tbody > tr > td {
+    padding: 8px 4px;
+    font-size: 12px;
+  }
+  
+  .file-name-cell {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .file-icon {
+    font-size: 16px;
+  }
+  
+  .file-name {
+    font-size: 12px;
+  }
+  
+  .file-description {
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .file-manager {
+    padding: 12px;
+  }
+  
+  .file-manager-toolbar,
+  .file-manager-actions {
+    padding: 12px;
+  }
+  
+  .toolbar-right {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .ant-table-thead > tr > th,
+  .ant-table-tbody > tr > td {
+    padding: 4px 2px;
+  }
+  
+  .ant-table-tbody > tr > td:last-child {
+    padding: 4px 8px;
+  }
+  
+  .ant-btn {
+    font-size: 12px;
+    padding: 4px 8px;
+    height: auto;
+  }
+  
+  .ant-btn-sm {
+    font-size: 10px;
+    padding: 2px 6px;
+  }
+}
+
+/* 深色模式支持 */
+@media (prefers-color-scheme: dark) {
+  .file-manager {
+    background: #000;
+  }
+  
+  .file-manager-toolbar,
+  .file-manager-actions,
+  .file-list-card {
+    background: #141414;
+    border-color: #303030;
+  }
+  
+  .file-name {
+    color: #fff;
+  }
+  
+  .file-description {
+    color: #8c8c8c;
+  }
+  
+  .ant-table-thead > tr > th {
+    background: #1f1f1f;
+    border-bottom-color: #303030;
+    color: #fff;
+  }
+  
+  .ant-table-tbody > tr > td {
+    background: #141414;
+    border-bottom-color: #303030;
+    color: #fff;
+  }
+  
+  .ant-table-tbody > tr:hover > td {
+    background: #1f1f1f;
+  }
+  
+  .ant-table-tbody > tr.ant-table-row-selected > td {
+    background: #1890ff;
+  }
+  
+  .ant-upload-drag {
+    background: #1f1f1f;
+    border-color: #303030;
+  }
+  
+  .ant-upload-drag:hover {
+    background: #262626;
+    border-color: #1890ff;
+  }
+  
+  .ant-upload-text {
+    color: #fff;
+  }
+  
+  .ant-upload-hint {
+    color: #8c8c8c;
+  }
+}
