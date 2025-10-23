@@ -62,7 +62,6 @@ jobs:
             ./frontend
       - name: Update deployment status
         run: |
-          echo "::set-output name=status::success"
           echo "Docker images built and pushed successfully"
           echo "Backend: ${{ secrets.DOCKER_USERNAME }}/wjgl-backend:latest"
           echo "Frontend: ${{ secrets.DOCKER_USERNAME }}/wjgl-frontend:latest"
