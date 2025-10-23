@@ -10,7 +10,8 @@ WORKDIR /app
 COPY package*.json ./
 
 # 安装依赖
-RUN npm ci --only=production
+# 使用npm install代替npm ci以避免lockfile严格匹配问题
+RUN npm install --only=production
 
 # 复制源代码
 COPY . .
