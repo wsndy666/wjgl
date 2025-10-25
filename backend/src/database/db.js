@@ -110,6 +110,12 @@ const initDatabase = () => {
       const defaultPassword = bcrypt.hashSync('admin123', 10);
       
       db.get("SELECT id FROM users WHERE username = 'admin'", (err, row) => {
+        if (err) {
+          console.error('检查默认用户失败:', err);
+          resolve();
+          return;
+        }
+        
         if (!row) {
           db.run(`
             INSERT INTO users (username, email, password, role) 
@@ -120,7 +126,11 @@ const initDatabase = () => {
             } else {
               console.log('默认管理员用户创建成功 (admin/admin123)');
             }
+            resolve();
           });
+        } else {
+          console.log('默认管理员用户已存在');
+          resolve();
         }
       });
 

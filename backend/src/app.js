@@ -5,6 +5,7 @@ const rateLimit = require('express-rate-limit');
 const path = require('path');
 const fs = require('fs');
 
+const { initDatabase } = require('./database/db');
 const authRoutes = require('./routes/auth');
 const fileRoutes = require('./routes/files');
 const folderRoutes = require('./routes/folders');
@@ -74,7 +75,16 @@ app.use('*', (req, res) => {
   res.status(404).json({ error: '接口不存在' });
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`服务器运行在端口 ${PORT}`);
-  console.log(`环境: ${process.env.NODE_ENV || 'development'}`);
-});
+// 初始化数据库并启动服务器
+initDatabase()
+  .then(() => {
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`服务器运行在端口 ${PORT}`);
+      console.log(`环境: ${process.env.NODE_ENV || 'development'}`);
+      console.log('数据库初始化完成');
+    });
+  })
+  .catch((err) => {
+    console.error('数据库初始化失败:', err);
+    process.exit(1);
+  });
