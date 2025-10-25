@@ -13,6 +13,13 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
+    - name: Debug info
+      run: |
+        echo "Current directory: $(pwd)"
+        echo "Directory structure:"
+        find . -type d -maxdepth 2
+        echo "GitHub event: ${{ github.event_name }}"
+        echo "Branch: ${{ github.ref_name }}"
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2
     - name: Login to DockerHub
