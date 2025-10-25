@@ -54,14 +54,7 @@ COPY --from=backend-builder /app/backend /app/backend
 WORKDIR /app/backend
 
 # 创建启动脚本
-RUN echo '#!/bin/sh
-
-# 启动nginx在后台运行
-nginx -g "daemon off;" &
-
-# 启动后端应用
-cd /app/backend
-npm start' > /app/start.sh && chmod +x /app/start.sh
+RUN echo -e '#!/bin/sh\n\n# 启动nginx在后台运行\nnginx -g "daemon off;" &\n\n# 启动后端应用\ncd /app/backend\nnpm start' > /app/start.sh && chmod +x /app/start.sh
 
 # 暴露端口
 EXPOSE 80 3001
