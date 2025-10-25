@@ -56,8 +56,8 @@ WORKDIR /app/backend
 # 创建启动脚本
 RUN echo '#!/bin/sh
 
-# 启动nginx
-nginx
+# 启动nginx在后台运行
+nginx -g "daemon off;" &
 
 # 启动后端应用
 cd /app/backend
