@@ -7,6 +7,8 @@ const router = express.Router();
 
 // 全局搜索
 router.get('/', authenticateToken, (req, res) => {
+  console.log('搜索请求参数:', req.query);
+  
   const { 
     q, 
     type = 'all', // all, files, folders
@@ -22,8 +24,19 @@ router.get('/', authenticateToken, (req, res) => {
   
   const offset = (page - 1) * limit;
   
+  // 如果没有搜索关键词，返回空结果而不是错误
   if (!q || q.trim().length === 0) {
-    return res.status(400).json({ error: '搜索关键词不能为空' });
+    return res.json({
+      success: true,
+      data: {
+        files: [],
+        folders: [],
+        total: 0,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: 0
+      }
+    });
   }
   
   let query = '';

@@ -34,6 +34,20 @@ app.use(cors({
   origin: process.env.FRONTEND_URL || '*',
   credentials: true
 }));
+
+// 请求日志中间件
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+  console.log('Headers:', JSON.stringify(req.headers, null, 2));
+  if (req.body && Object.keys(req.body).length > 0) {
+    console.log('Body:', JSON.stringify(req.body, null, 2));
+  }
+  if (req.query && Object.keys(req.query).length > 0) {
+    console.log('Query:', JSON.stringify(req.query, null, 2));
+  }
+  next();
+});
+
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
@@ -70,8 +84,19 @@ app.use((err, req, res, next) => {
   });
 });
 
+// 错误处理中间件
+app.use((err, req, res, next) => {
+  console.error('服务器错误:', err);
+  res.status(500).json({ 
+    error: '服务器内部错误',
+    message: err.message,
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+  });
+});
+
 // 404处理
 app.use('*', (req, res) => {
+  console.log(`404 - 接口不存在: ${req.method} ${req.originalUrl}`);
   res.status(404).json({ error: '接口不存在' });
 });
 
