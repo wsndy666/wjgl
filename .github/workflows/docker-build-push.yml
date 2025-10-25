@@ -2,71 +2,105 @@ name: Build and Push Docker Images
 
 on:
   push:
-    branches: [main]
-    tags: ['v*']
+    branches: [ main, fix-workflow2 ]
+    tags: [ 'v*.*.*' ]
   pull_request:
-    branches: [main]
+    branches: [ main ]
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-    - name: Debug info
-      run: |
-        echo "Current directory: $(pwd)"
-        echo "Directory structure:"
-        find . -type d -maxdepth 2
-        echo "GitHub event: ${{ github.event_name }}"
-        echo "Branch: ${{ github.ref_name }}"
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2
-    - name: Login to DockerHub
-      uses: docker/login-action@v2
-      with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
-    - name: Extract metadata (tags, labels) for Docker
-      id: meta
-      uses: docker/metadata-action@v4
-      with:
-        images: |
-          ${{ secrets.DOCKER_USERNAME }}/wjgl-backend
-          ${{ secrets.DOCKER_USERNAME }}/wjgl-frontend
-    - name: Build and push backend image
-      uses: docker/build-push-action@v4
-      with:
-        context: ./backend
-        push: ${{ github.event_name != 'pull_request' }}
-        tags: ${{ secrets.DOCKER_USERNAME }}/wjgl-backend:latest
-        labels: ${{ steps.meta.outputs.labels }}
-        cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/wjgl-backend:buildcache
-        cache-to: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/wjgl-backend:buildcache,mode=max
-    - name: Build and push frontend image
-      uses: docker/build-push-action@v4
-      with:
-        context: ./frontend
-        push: ${{ github.event_name != 'pull_request' }}
-        tags: ${{ secrets.DOCKER_USERNAME }}/wjgl-frontend:latest
-        labels: ${{ steps.meta.outputs.labels }}
-        cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/wjgl-frontend:buildcache
-        cache-to: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/wjgl-frontend:buildcache,mode=max
-    - name: Build and push version tag (if tagged)
-      if: startsWith(github.ref, 'refs/tags/')
-      run: |
-        VERSION=${GITHUB_REF#refs/tags/}
-        echo "Building version: $VERSION"
-        docker buildx build --push \
-          --tag ${{ secrets.DOCKER_USERNAME }}/wjgl-backend:${VERSION} \
-          --cache-from ${{ secrets.DOCKER_USERNAME }}/wjgl-backend:buildcache \
-          ./backend
-        docker buildx build --push \
-          --tag ${{ secrets.DOCKER_USERNAME }}/wjgl-frontend:${VERSION} \
-          --cache-from ${{ secrets.DOCKER_USERNAME }}/wjgl-frontend:buildcache \
-          ./frontend
-    - name: Update deployment status
-      run: |
-        echo "Docker images built and pushed successfully"
-        echo "Backend: ${{ secrets.DOCKER_USERNAME }}/wjgl-backend:latest"
-        echo "Frontend: ${{ secrets.DOCKER_USERNAME }}/wjgl-frontend:latest"
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Debug info
+        run: |
+          echo "Current directory: $(pwd)"
+          echo "Directory structure:"
+          find . -type d -maxdepth 2
+          echo "Files in backend directory:"
+          ls -la ./backend || echo "Backend directory not found"
+          echo "Files in frontend directory:"
+          ls -la ./frontend || echo "Frontend directory not found"
+          echo "GitHub event: ${{ github.event_name }}"
+          echo "Branch: ${{ github.ref_name }}"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          driver-opts: network=host
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+        env:
+          DOCKER_BUILDKIT: 1
+
+      - name: Extract metadata for backend
+        id: meta-backend
+        uses: docker/metadata-action@v4
+        with:
+          images: wsndy666/file-management-backend
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,format=short
+
+      - name: Debug backend metadata
+        run: |
+          echo "Backend image tags: ${{ steps.meta-backend.outputs.tags }}"
+          echo "Backend image labels: ${{ steps.meta-backend.outputs.labels }}"
+
+      - name: Build backend image (without push for debugging)
+        uses: docker/build-push-action@v4
+        with:
+          context: ./backend
+          push: false
+          load: true
+          tags: wsndy666/file-management-backend:debug
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            DEBUG=true
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ steps.meta-backend.outputs.tags }}
+          labels: ${{ steps.meta-backend.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Extract metadata for frontend
+        id: meta-frontend
+        uses: docker/metadata-action@v4
+        with:
+          images: wsndy666/file-management-frontend
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,format=short
+
+      - name: Debug frontend metadata
+        run: |
+          echo "Frontend image tags: ${{ steps.meta-frontend.outputs.tags }}"
+          echo "Frontend image labels: ${{ steps.meta-frontend.outputs.labels }}"
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./frontend
+          push: true
+          tags: ${{ steps.meta-frontend.outputs.tags }}
+          labels: ${{ steps.meta-frontend.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
