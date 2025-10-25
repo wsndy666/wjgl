@@ -23,12 +23,10 @@ import {
   EditOutlined,
   LockOutlined,
   UnlockOutlined,
-  SearchOutlined,
   ReloadOutlined
 } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from 'react-query'
 import { fileApi, folderApi, api } from '../services/api'
-import useAuthStore from '../stores/authStore'
 import './FileManager.css'
 
 const { Search } = Input

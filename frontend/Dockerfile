@@ -1,4 +1,4 @@
-FROM node:18-alpine as builder
+FROM node:18-alpine AS builder
 
 # 安装必要的构建工具
 RUN apk add --no-cache git python3 make g++
@@ -17,11 +17,13 @@ RUN npm install --legacy-peer-deps || (echo "安装依赖失败，尝试清理�
 # 复制源代码
 COPY . .
 
-# 暂时注释掉TypeScript检查，后续修复完成后再开启
-# RUN npx tsc --noEmit || (echo "TypeScript检查失败，以下是详细错误信息:" && npx tsc --noEmit && exit 1)
+# 运行TypeScript检查并输出详细错误信息
+RUN echo "运行TypeScript检查..."
+RUN npx tsc --noEmit || (echo "TypeScript检查失败，以下是详细错误信息:" && npx tsc --noEmit --listFiles --diagnostics && exit 1)
 
 # 构建应用
-RUN npm run build
+RUN echo "开始构建应用..."
+RUN npm run build || (echo "构建失败，查看详细错误信息:" && exit 1)
 
 # 生产环境镜像
 FROM nginx:alpine

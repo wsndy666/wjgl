@@ -1,6 +1,4 @@
-import React from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
-import { Layout } from 'antd'
 import useAuthStore from './stores/authStore'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
@@ -10,8 +8,6 @@ import Settings from './pages/Settings'
 import UserManagement from './pages/UserManagement'
 import AppLayout from './components/Layout/AppLayout'
 import Loading from './components/Common/Loading'
-
-const { Content } = Layout
 
 function App() {
   const { isAuthenticated, isLoading } = useAuthStore()

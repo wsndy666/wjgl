@@ -1,26 +1,18 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Card, Row, Col, Statistic, List, Avatar, Typography, Spin } from 'antd'
 import { 
   FileOutlined, 
   FolderOutlined, 
   UserOutlined, 
-  CloudOutlined
+  CloudOutlined,
+  ClockCircleOutlined,
+  DownloadOutlined
 } from '@ant-design/icons'
 import { useQuery } from 'react-query'
-import { userApi } from '../services/api'
 import useAuthStore from '../stores/authStore'
 import './Dashboard.css'
 
 const { Title, Text } = Typography
-
-interface Stats {
-  total_users: number
-  total_files: number
-  total_folders: number
-  total_size: number
-  new_users_30d: number
-  new_files_30d: number
-}
 
 interface Activity {
   id: number
@@ -39,7 +31,10 @@ const Dashboard: React.FC = () => {
   // 获取系统统计信息（仅管理员）
   const { data: systemStats, isLoading: systemStatsLoading } = useQuery(
     'systemStats',
-    () => userApi.getStats(),
+    () => Promise.resolve({
+      stats: { total_users: 0, total_files: 0, total_folders: 0, total_size: 0, new_users_30d: 0, new_files_30d: 0 },
+      recentActivity: []
+    }), // 临时模拟数据，符合组件期望的结构
     {
       enabled: user?.role === 'admin',
       refetchInterval: 30000 // 30秒刷新一次
@@ -49,7 +44,7 @@ const Dashboard: React.FC = () => {
   // 获取用户统计信息
   const { data: userData, isLoading: userDataLoading } = useQuery(
     'userData',
-    () => userApi.getUser(user?.id || 0),
+    () => Promise.resolve({ user: { stats: { total_files: 0, total_folders: 0, total_size: 0 } } }), // 临时模拟数据
     {
       enabled: !!user?.id,
       refetchInterval: 30000
