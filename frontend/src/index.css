@@ -16,7 +16,7 @@ body {
 
 #root {
   height: 100vh;
-  overflow: hidden;
+  overflow: auto;
 }
 
 /* 自定义滚动条 */

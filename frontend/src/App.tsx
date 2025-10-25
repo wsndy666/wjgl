@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
+import { useEffect } from 'react'
 import useAuthStore from './stores/authStore'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
@@ -10,7 +11,12 @@ import AppLayout from './components/Layout/AppLayout'
 import Loading from './components/Common/Loading'
 
 function App() {
-  const { isAuthenticated, isLoading } = useAuthStore()
+  const { isAuthenticated, isLoading, checkAuth } = useAuthStore()
+
+  // 应用启动时检查认证状态
+  useEffect(() => {
+    checkAuth()
+  }, [checkAuth])
 
   if (isLoading) {
     return <Loading />

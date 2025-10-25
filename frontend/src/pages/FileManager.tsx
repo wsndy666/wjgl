@@ -67,8 +67,9 @@ const FileManager: React.FC = () => {
       ['files', currentFolder, searchText],
       () => fileApi.getFiles(currentFolder || undefined),
       {
-        staleTime: 300000,
-        keepPreviousData: true
+        staleTime: 0, // 立即过期，确保数据实时更新
+        refetchOnWindowFocus: true, // 窗口聚焦时重新获取数据
+        refetchOnMount: true // 组件挂载时重新获取数据
       }
   )
 
@@ -129,6 +130,8 @@ const FileManager: React.FC = () => {
         message.success('文件上传成功')
         setUploadModalVisible(false)
         uploadForm.resetFields()
+        // 使用invalidateQueries确保数据更新
+        queryClient.invalidateQueries(['files'])
         refetchFiles()
       },
       onError: (error: any) => {

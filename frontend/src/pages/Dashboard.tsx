@@ -28,23 +28,34 @@ const Dashboard: React.FC = () => {
   const { user } = useAuthStore()
   const [userStats, setUserStats] = useState<any>(null)
 
-  // 获取系统统计信息（仅管理员）
-  const { data: systemStats, isLoading: systemStatsLoading } = useQuery(
-    'systemStats',
-    () => Promise.resolve({
-      stats: { total_users: 0, total_files: 0, total_folders: 0, total_size: 0, new_users_30d: 0, new_files_30d: 0 },
-      recentActivity: []
-    }), // 临时模拟数据，符合组件期望的结构
+  // 获取仪表盘统计数据
+  const { data: dashboardData, isLoading: dashboardLoading } = useQuery(
+    'dashboardStats',
+    async () => {
+      const response = await fetch('/api/dashboard/stats', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth-storage')?.replace(/"/g, '')}`
+        }
+      });
+      return response.json();
+    },
     {
-      enabled: user?.role === 'admin',
+      enabled: !!user?.id,
       refetchInterval: 30000 // 30秒刷新一次
     }
   )
 
-  // 获取用户统计信息
-  const { data: userData, isLoading: userDataLoading } = useQuery(
-    'userData',
-    () => Promise.resolve({ user: { stats: { total_files: 0, total_folders: 0, total_size: 0 } } }), // 临时模拟数据
+  // 获取最近活动
+  const { data: activityData, isLoading: activityLoading } = useQuery(
+    'dashboardActivity',
+    async () => {
+      const response = await fetch('/api/dashboard/activity', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth-storage')?.replace(/"/g, '')}`
+        }
+      });
+      return response.json();
+    },
     {
       enabled: !!user?.id,
       refetchInterval: 30000
@@ -52,10 +63,10 @@ const Dashboard: React.FC = () => {
   )
 
   useEffect(() => {
-    if (userData) {
-      setUserStats(userData.user?.stats)
+    if (dashboardData) {
+      setUserStats(dashboardData.userStats)
     }
-  }, [userData])
+  }, [dashboardData])
 
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 B'
@@ -84,7 +95,7 @@ const Dashboard: React.FC = () => {
     return `${actionMap[action] || action}${typeMap[targetType] || targetType}`
   }
 
-  if (systemStatsLoading || userDataLoading) {
+  if (dashboardLoading || activityLoading) {
     return (
       <div className="dashboard-loading">
         <Spin size="large" />
@@ -105,7 +116,7 @@ const Dashboard: React.FC = () => {
           <Card className="stat-card">
             <Statistic
               title="我的文件"
-              value={userStats?.file_count || 0}
+              value={userStats?.total_files || 0}
               prefix={<FileOutlined />}
               valueStyle={{ color: '#1890ff' }}
             />
@@ -116,7 +127,7 @@ const Dashboard: React.FC = () => {
           <Card className="stat-card">
             <Statistic
               title="我的文件夹"
-              value={userStats?.folder_count || 0}
+              value={userStats?.total_folders || 0}
               prefix={<FolderOutlined />}
               valueStyle={{ color: '#52c41a' }}
             />
@@ -147,7 +158,7 @@ const Dashboard: React.FC = () => {
       </Row>
 
       {/* 管理员统计 */}
-      {user?.role === 'admin' && systemStats && (
+      {user?.role === 'admin' && dashboardData?.systemStats && (
         <Row gutter={[16, 16]} className="dashboard-admin-stats">
           <Col span={24}>
             <Title level={4}>系统统计</Title>
@@ -157,7 +168,7 @@ const Dashboard: React.FC = () => {
             <Card className="stat-card admin-stat">
               <Statistic
                 title="总用户数"
-                value={systemStats.stats?.total_users || 0}
+                value={dashboardData.systemStats?.total_users || 0}
                 prefix={<UserOutlined />}
                 valueStyle={{ color: '#1890ff' }}
               />
@@ -168,7 +179,7 @@ const Dashboard: React.FC = () => {
             <Card className="stat-card admin-stat">
               <Statistic
                 title="总文件数"
-                value={systemStats.stats?.total_files || 0}
+                value={dashboardData.systemStats?.total_files || 0}
                 prefix={<FileOutlined />}
                 valueStyle={{ color: '#52c41a' }}
               />
@@ -179,7 +190,7 @@ const Dashboard: React.FC = () => {
             <Card className="stat-card admin-stat">
               <Statistic
                 title="总文件夹数"
-                value={systemStats.stats?.total_folders || 0}
+                value={dashboardData.systemStats?.total_folders || 0}
                 prefix={<FolderOutlined />}
                 valueStyle={{ color: '#faad14' }}
               />
@@ -190,7 +201,7 @@ const Dashboard: React.FC = () => {
             <Card className="stat-card admin-stat">
               <Statistic
                 title="总存储量"
-                value={formatFileSize(systemStats.stats?.total_size || 0)}
+                value={formatFileSize(dashboardData.systemStats?.total_size || 0)}
                 prefix={<CloudOutlined />}
                 valueStyle={{ color: '#722ed1' }}
               />
@@ -201,11 +212,11 @@ const Dashboard: React.FC = () => {
 
       <Row gutter={[16, 16]} className="dashboard-content">
         {/* 最近活动 */}
-        {user?.role === 'admin' && systemStats?.recentActivity && (
+        {user?.role === 'admin' && activityData?.activities && (
           <Col xs={24} lg={12}>
             <Card title="最近活动" className="activity-card">
               <List
-                dataSource={systemStats.recentActivity}
+                dataSource={activityData?.activities || []}
                 renderItem={(item: Activity) => (
                   <List.Item>
                     <List.Item.Meta
