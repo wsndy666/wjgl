@@ -1,5 +1,8 @@
 FROM node:18-alpine as builder
 
+# 安装必要的构建工具
+RUN apk add --no-cache git python3 make g++
+
 WORKDIR /app
 
 # 复制package文件
@@ -7,10 +10,15 @@ COPY package*.json ./
 
 # 安装依赖
 # 使用npm install代替npm ci以避免lockfile严格匹配问题
-RUN npm install
+# 设置npm日志级别为详细，查看更多安装信息
+RUN npm config set loglevel verbose
+RUN npm install --legacy-peer-deps || (echo "安装依赖失败，尝试清理缓存..." && npm cache clean --force && npm install --legacy-peer-deps)
 
 # 复制源代码
 COPY . .
+
+# 先单独运行TypeScript检查，查看具体错误
+RUN npx tsc --noEmit || (echo "TypeScript检查失败，输出详细错误..." && exit 1)
 
 # 构建应用
 RUN npm run build

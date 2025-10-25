@@ -11,7 +11,7 @@ import {
   BellOutlined
 } from '@ant-design/icons'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { useAuthStore } from '../../stores/authStore'
+import useAuthStore from '../../stores/authStore'
 import './AppLayout.css'
 
 const { Header, Sider, Content } = Layout

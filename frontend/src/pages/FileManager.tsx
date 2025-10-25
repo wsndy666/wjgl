@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { 
   Card, 
   Button, 
@@ -13,8 +13,7 @@ import {
   Tag,
   Tooltip,
   Breadcrumb,
-  Select,
-  Switch
+  Select
 } from 'antd'
 import {
   UploadOutlined,
@@ -25,13 +24,11 @@ import {
   LockOutlined,
   UnlockOutlined,
   SearchOutlined,
-  ReloadOutlined,
-  EyeOutlined,
-  MoreOutlined
+  ReloadOutlined
 } from '@ant-design/icons'
 import { useQuery, useMutation, useQueryClient } from 'react-query'
-import { fileApi, folderApi } from '../services/api'
-import { useAuthStore } from '../stores/authStore'
+import { fileApi, folderApi, api } from '../services/api'
+import useAuthStore from '../stores/authStore'
 import './FileManager.css'
 
 const { Search } = Input
@@ -50,17 +47,10 @@ interface FileItem {
   folder_id?: number
 }
 
-interface FolderItem {
-  id: number
-  name: string
-  parent_id?: number
-  file_count: number
-  subfolder_count: number
-  created_at: string
-}
+// 移除未使用的FolderItem接口
 
 const FileManager: React.FC = () => {
-  const { user } = useAuthStore()
+  // const { user } = useAuthStore()
   const queryClient = useQueryClient()
   const [currentFolder, setCurrentFolder] = useState<number | null>(null)
   const [selectedFiles, setSelectedFiles] = useState<number[]>([])
@@ -76,40 +66,64 @@ const FileManager: React.FC = () => {
 
   // 获取文件列表
   const { data: filesData, isLoading: filesLoading, refetch: refetchFiles } = useQuery(
-    ['files', currentFolder, searchText],
-    () => fileApi.getFiles({ 
-      folder_id: currentFolder, 
-      search: searchText || undefined 
-    }),
-    {
-      keepPreviousData: true
-    }
+      ['files', currentFolder, searchText],
+      () => fileApi.getFiles(currentFolder || undefined),
+      {
+        staleTime: 300000,
+        keepPreviousData: true
+      }
   )
 
   // 获取文件夹树
-  const { data: folderTree } = useQuery(
-    'folderTree',
-    () => folderApi.getFolderTree(),
-    {
-      enabled: !!user
-    }
-  )
+  // 暂时注释掉未使用的folderTree查询
+  // const { data: folderTree } = useQuery(
+  //   ['folderTree'],
+  //   () => folderApi.getFolders(),
+  //   { staleTime: 300000 }
+  // )
 
   // 上传文件
   const uploadMutation = useMutation(
     (data: { files: File[]; folder_id?: number; description?: string; tags?: string }) => {
       if (data.files.length === 1) {
-        return fileApi.uploadFile(data.files[0], {
-          folder_id: data.folder_id,
-          description: data.description,
-          tags: data.tags
-        })
+        // 简化参数传递，直接使用formData
+          const formData = new FormData()
+          formData.append('file', data.files[0])
+          if (data.folder_id) {
+            formData.append('folderId', data.folder_id.toString())
+          }
+          if (data.description) {
+            formData.append('description', data.description)
+          }
+          if (data.tags) {
+            formData.append('tags', data.tags)
+          }
+          return api.post('/files/upload', formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+          }).then(res => res.data)
       } else {
-        return fileApi.uploadFiles(data.files, {
-          folder_id: data.folder_id,
-          description: data.description,
-          tags: data.tags
-        })
+        // 简化多文件上传
+          const promises = data.files.map(file => {
+            const formData = new FormData()
+            formData.append('file', file)
+            if (data.folder_id) {
+              formData.append('folderId', data.folder_id.toString())
+            }
+            if (data.description) {
+              formData.append('description', data.description)
+            }
+            if (data.tags) {
+              formData.append('tags', data.tags)
+            }
+            return api.post('/files/upload', formData, {
+              headers: {
+                'Content-Type': 'multipart/form-data',
+              },
+            }).then(res => res.data)
+          })
+          return Promise.all(promises)
       }
     },
     {
@@ -223,7 +237,7 @@ const FileManager: React.FC = () => {
     
     uploadMutation.mutate({
       files: Array.isArray(files) ? files : [files],
-      folder_id: currentFolder,
+      folder_id: currentFolder || undefined,
       description,
       tags
     })
@@ -310,7 +324,7 @@ const FileManager: React.FC = () => {
             {record.tags && (
               <div className="file-tags">
                 {record.tags.split(',').map((tag, index) => (
-                  <Tag key={index} size="small">{tag.trim()}</Tag>
+                  <Tag key={index}>{tag.trim()}</Tag>
                 ))}
               </div>
             )}
@@ -345,7 +359,7 @@ const FileManager: React.FC = () => {
       title: '操作',
       key: 'actions',
       width: 120,
-      render: (_, record: FileItem) => (
+      render: (_: any, record: FileItem) => (
         <Space>
           <Tooltip title="下载">
             <Button 

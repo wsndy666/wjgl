@@ -1,16 +1,14 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import { Card, Row, Col, Statistic, List, Avatar, Typography, Spin } from 'antd'
 import { 
   FileOutlined, 
   FolderOutlined, 
   UserOutlined, 
-  CloudOutlined,
-  ClockCircleOutlined,
-  DownloadOutlined
+  CloudOutlined
 } from '@ant-design/icons'
 import { useQuery } from 'react-query'
 import { userApi } from '../services/api'
-import { useAuthStore } from '../stores/authStore'
+import useAuthStore from '../stores/authStore'
 import './Dashboard.css'
 
 const { Title, Text } = Typography

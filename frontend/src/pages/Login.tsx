@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Form, Input, Button, Card, Typography, message } from 'antd'
 import { UserOutlined, LockOutlined } from '@ant-design/icons'
-import { useAuthStore } from '../stores/authStore'
+import useAuthStore from '../stores/authStore'
 import { useNavigate } from 'react-router-dom'
 import './Login.css'
 

@@ -19,12 +19,11 @@ import {
   EditOutlined, 
   DeleteOutlined, 
   UserOutlined,
-  ReloadOutlined,
-  SearchOutlined
+  ReloadOutlined
 } from '@ant-design/icons'
-import { useQuery, useMutation, useQueryClient } from 'react-query'
+import { useQuery, useMutation } from 'react-query'
 import { userApi } from '../services/api'
-import { useAuthStore } from '../stores/authStore'
+import useAuthStore from '../stores/authStore'
 import './UserManagement.css'
 
 const { Option } = Select
@@ -41,7 +40,7 @@ interface User {
 
 const UserManagement: React.FC = () => {
   const { user: currentUser } = useAuthStore()
-  const queryClient = useQueryClient()
+  // const queryClient = useQueryClient()
   const [createModalVisible, setCreateModalVisible] = useState(false)
   const [editModalVisible, setEditModalVisible] = useState(false)
   const [editingUser, setEditingUser] = useState<User | null>(null)
@@ -129,7 +128,6 @@ const UserManagement: React.FC = () => {
       email: user.email,
       role: user.role
     })
-    })
     setEditModalVisible(true)
   }
 
@@ -157,7 +155,7 @@ const UserManagement: React.FC = () => {
     {
       title: '用户',
       key: 'user',
-      render: (_, record: User) => (
+      render: (_: any, record: User) => (
         <div className="user-info">
           <Avatar 
             size={40} 
@@ -194,7 +192,7 @@ const UserManagement: React.FC = () => {
       title: '操作',
       key: 'actions',
       width: 200,
-      render: (_, record: User) => (
+      render: (_: any, record: User) => (
         <Space>
           <Tooltip title="编辑">
             <Button 

@@ -1,7 +1,7 @@
 import React from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { Layout } from 'antd'
-import { useAuthStore } from './stores/authStore'
+import useAuthStore from './stores/authStore'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import FileManager from './pages/FileManager'

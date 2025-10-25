@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Card, Form, Input, Button, Avatar, Upload, Switch, message, Tabs, Divider } from 'antd'
 import { UserOutlined, CameraOutlined, LockOutlined, BellOutlined } from '@ant-design/icons'
-import { useAuthStore } from '../stores/authStore'
+import useAuthStore from '../stores/authStore'
 import { authApi } from '../services/api'
 import './Settings.css'
 

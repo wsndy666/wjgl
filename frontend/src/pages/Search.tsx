@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Card, Input, Button, Select, DatePicker, Table, Tag, Space, Typography, Empty } from 'antd'
-import { SearchOutlined, FilterOutlined, DownloadOutlined } from '@ant-design/icons'
+import { SearchOutlined, FilterOutlined } from '@ant-design/icons'
 import { useQuery } from 'react-query'
 import { searchApi } from '../services/api'
 import './Search.css'
@@ -48,7 +48,7 @@ const SearchPage: React.FC = () => {
   )
 
   // 搜索结果
-  const { data: searchResults, isLoading, refetch } = useQuery(
+  const { data: searchResults, isLoading } = useQuery(
     ['searchResults', searchQuery, searchType, filters],
     () => {
       if (advancedSearch) {
@@ -80,7 +80,7 @@ const SearchPage: React.FC = () => {
   }
 
   const handleFilterChange = (key: string, value: any) => {
-    setFilters(prev => ({
+    setFilters((prev: any) => ({
       ...prev,
       [key]: value
     }))
@@ -125,7 +125,7 @@ const SearchPage: React.FC = () => {
             {record.tags && (
               <div className="result-tags">
                 {record.tags.split(',').map((tag, index) => (
-                  <Tag key={index} size="small">{tag.trim()}</Tag>
+                  <Tag key={index}>{tag.trim()}</Tag>
                 ))}
               </div>
             )}
