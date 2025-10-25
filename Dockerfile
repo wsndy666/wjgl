@@ -45,7 +45,35 @@ RUN mkdir -p /app/data/uploads /app/data/logs /etc/nginx/conf.d /var/www/html
 
 # 配置Nginx
 COPY --from=frontend-builder /app/frontend/dist /var/www/html
-COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
+# 创建正确格式的nginx配置文件
+RUN cat > /etc/nginx/conf.d/default.conf << 'EOF'
+server {
+    listen 80;
+    server_name localhost;
+    root /var/www/html;
+    index index.html;
+
+    # 处理前端路由
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # 静态资源缓存
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # API代理
+    location /api/ {
+        proxy_pass http://localhost:3001;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+EOF
 
 # 复制后端应用
 COPY --from=backend-builder /app/backend /app/backend
@@ -54,7 +82,14 @@ COPY --from=backend-builder /app/backend /app/backend
 WORKDIR /app/backend
 
 # 创建启动脚本
-RUN echo -e '#!/bin/sh\n\n# 启动nginx在后台运行\nnginx -g "daemon off;" &\n\n# 启动后端应用\ncd /app/backend\nnpm start' > /app/start.sh && chmod +x /app/start.sh
+RUN echo '#!/bin/sh
+
+# 启动nginx在后台运行
+nginx
+
+# 启动后端应用
+cd /app/backend
+npm start' > /app/start.sh && chmod +x /app/start.sh
 
 # 暴露端口
 EXPOSE 80 3001
