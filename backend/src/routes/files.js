@@ -263,7 +263,7 @@ router.get('/:id/download', authenticateToken, checkOwnership, (req, res) => {
 }, logOperation('download', 'file'));
 
 // 批量下载文件（ZIP压缩）
-router.post('/download/batch', authenticateToken, (req, res) => {
+router.post('/download', authenticateToken, (req, res) => {
   const { fileIds } = req.body;
   
   if (!fileIds || !Array.isArray(fileIds) || fileIds.length === 0) {
@@ -357,13 +357,14 @@ router.put('/:id', authenticateToken, checkOwnership, [
 }, logOperation('update', 'file'));
 
 // 锁定/解锁文件
-router.put('/:id/lock', authenticateToken, checkOwnership, (req, res) => {
+router.post('/:id/lock', authenticateToken, checkOwnership, (req, res) => {
   const { id } = req.params;
-  const { is_locked } = req.body;
+  const { isLocked, is_locked } = req.body;
+  const lockStatus = isLocked !== undefined ? isLocked : is_locked;
   
   db.run(
     'UPDATE files SET is_locked = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-    [is_locked ? 1 : 0, id],
+    [lockStatus ? 1 : 0, id],
     function(err) {
       if (err) {
         return res.status(500).json({ error: '操作失败' });
@@ -373,9 +374,9 @@ router.put('/:id/lock', authenticateToken, checkOwnership, (req, res) => {
         return res.status(404).json({ error: '文件不存在' });
       }
       
-      res.json({ 
-        message: is_locked ? '文件已锁定' : '文件已解锁',
-        is_locked: !!is_locked
+      res.json({
+        message: lockStatus ? '文件已锁定' : '文件已解锁',
+        is_locked: !!lockStatus
       });
     }
   );
