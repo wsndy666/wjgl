@@ -82,13 +82,13 @@ COPY --from=backend-builder /app/backend /app/backend
 WORKDIR /app/backend
 
 # 创建启动脚本
-RUN echo '#!/bin/sh
-
-# 启动nginx在后台运行
-nginx
-
-# 启动后端应用
-cd /app/backend
+RUN echo '#!/bin/sh\n\
+\n\
+# 启动nginx在后台运行\n\
+nginx\n\
+\n\
+# 启动后端应用\n\
+cd /app/backend\n\
 npm start' > /app/start.sh && chmod +x /app/start.sh
 
 # 暴露端口
