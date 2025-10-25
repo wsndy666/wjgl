@@ -6,8 +6,7 @@ echo "===== wjgl文件管理系统 - 从Docker Hub部署 ====="
 set -e
 
 echo "拉取最新的Docker镜像..."
-docker pull wsndy666/wjgl-backend:latest
-docker pull wsndy666/wjgl-frontend:latest
+docker pull wsndy666/wjgl:latest
 
 echo "停止并删除现有容器（如果存在）..."
 docker compose down || true

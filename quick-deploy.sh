@@ -36,8 +36,7 @@ mkdir -p ./data/uploads
 mkdir -p ./data/logs
 
 echo "拉取Docker镜像..."
-docker pull wsndy666/wjgl-backend:latest
-docker pull wsndy666/wjgl-frontend:latest
+docker pull wsndy666/wjgl:latest
 
 echo "启动wjgl文件管理系统..."
 docker compose up -d
