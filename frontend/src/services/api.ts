@@ -192,3 +192,6 @@ export const folderApi = {
     return response.data
   }
 }
+
+// 导出api实例
+export { api }

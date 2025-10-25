@@ -79,9 +79,9 @@ chmod +x quick-deploy.sh
 
 部署完成后，在飞牛NAS的Docker管理界面中应该能看到：
 
-- **项目名称**: file-management
+- **项目名称**: wjgl
 - **容器标签**: com.fn.nas.managed=true
-- **容器分类**: file-management
+- **容器分类**: wjgl
 
 ## 🔧 配置说明
 

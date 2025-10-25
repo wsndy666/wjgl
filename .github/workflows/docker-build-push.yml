@@ -9,8 +9,8 @@ on:
 
 env:
   REGISTRY: docker.io
-  BACKEND_IMAGE_NAME: wsndy666/file-management-backend
-  FRONTEND_IMAGE_NAME: wsndy666/file-management-frontend
+  BACKEND_IMAGE_NAME: wsndy666/wjgl-backend
+  FRONTEND_IMAGE_NAME: wsndy666/wjgl-frontend
 
 jobs:
   build:

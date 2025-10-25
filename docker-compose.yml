@@ -1,7 +1,7 @@
 services:
   backend:
     build: ./backend
-    container_name: file-management-backend
+    container_name: wjgl-backend
     ports:
       - "3001:3001"
     environment:
@@ -22,7 +22,7 @@ services:
 
   frontend:
     build: ./frontend
-    container_name: file-management-frontend
+    container_name: wjgl-frontend
     ports:
       - "3000:80"
     depends_on:
@@ -31,7 +31,7 @@ services:
 
   nginx:
     image: nginx:alpine
-    container_name: file-management-nginx
+    container_name: wjgl-nginx
     ports:
       - "80:80"
       - "443:443"
