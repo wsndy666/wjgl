@@ -5,7 +5,8 @@ const rateLimit = require('express-rate-limit');
 const path = require('path');
 const fs = require('fs');
 
-const { initDatabase } = require('./database/db');
+const { initDatabase, db } = require('./database/db');
+const { authenticateToken } = require('./middleware/auth');
 const authRoutes = require('./routes/auth');
 const fileRoutes = require('./routes/files');
 const folderRoutes = require('./routes/folders');
