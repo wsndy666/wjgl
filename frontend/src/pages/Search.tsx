@@ -321,20 +321,20 @@ const SearchPage: React.FC = () => {
               搜索结果
               {searchResults && (
                 <Text type="secondary">
-                  （共找到 {searchResults.pagination?.total || 0} 个结果）
+                  （共找到 {searchResults.data?.total || 0} 个结果）
                 </Text>
               )}
             </Title>
           </div>
           
-          {searchResults && searchResults.results && searchResults.results.length > 0 ? (
+          {searchResults && searchResults.data && (searchResults.data.files.length > 0 || searchResults.data.folders.length > 0) ? (
             <Table
               columns={columns}
-              dataSource={searchResults.results}
+              dataSource={[...(searchResults.data.files || []), ...(searchResults.data.folders || [])]}
               loading={isLoading}
               rowKey="id"
               pagination={{
-                total: searchResults.pagination?.total || 0,
+                total: searchResults.data.total || 0,
                 pageSize: 20,
                 showSizeChanger: true,
                 showQuickJumper: true,

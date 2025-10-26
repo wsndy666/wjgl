@@ -13,7 +13,9 @@ import {
   Tag,
   Tooltip,
   Breadcrumb,
-  Select
+  Select,
+  Row,
+  Col
 } from 'antd'
 import {
   UploadOutlined,
@@ -132,7 +134,10 @@ const FileManager: React.FC = () => {
         uploadForm.resetFields()
         // 使用invalidateQueries确保数据更新
         queryClient.invalidateQueries(['files'])
+        queryClient.invalidateQueries(['dashboardStats'])
         refetchFiles()
+        // 触发仪表盘数据刷新事件
+        window.dispatchEvent(new CustomEvent('fileOperationComplete'))
       },
       onError: (error: any) => {
         message.error(error.response?.data?.error || '上传失败')
@@ -149,7 +154,10 @@ const FileManager: React.FC = () => {
         setFolderModalVisible(false)
         folderForm.resetFields()
         queryClient.invalidateQueries('folderTree')
+        queryClient.invalidateQueries(['dashboardStats'])
         refetchFiles()
+        // 触发仪表盘数据刷新事件
+        window.dispatchEvent(new CustomEvent('fileOperationComplete'))
       },
       onError: (error: any) => {
         message.error(error.response?.data?.error || '创建失败')
@@ -494,21 +502,90 @@ const FileManager: React.FC = () => {
 
       {/* 文件列表 */}
       <Card className="file-list-card">
-        <Table
-          columns={columns}
-          dataSource={filesData?.files || []}
-          loading={filesLoading}
-          rowKey="id"
-          rowSelection={rowSelection}
-          pagination={{
-            total: filesData?.pagination?.total || 0,
-            pageSize: 20,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total, range) => 
-              `第 ${range[0]}-${range[1]} 条，共 ${total} 条`
-          }}
-        />
+        {viewMode === 'list' ? (
+          <Table
+            columns={columns}
+            dataSource={filesData?.files || []}
+            loading={filesLoading}
+            rowKey="id"
+            rowSelection={rowSelection}
+            pagination={{
+              total: filesData?.pagination?.total || 0,
+              pageSize: 20,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              showTotal: (total, range) => 
+                `第 ${range[0]}-${range[1]} 条，共 ${total} 条`
+            }}
+          />
+        ) : (
+          <div className="grid-view">
+            <Row gutter={[16, 16]}>
+              {(filesData?.files || []).map((file: FileItem) => (
+                <Col xs={12} sm={8} md={6} lg={4} key={file.id}>
+                  <Card
+                    hoverable
+                    className="file-grid-item"
+                    cover={
+                      <div className="file-icon">
+                        {file.mime_type?.startsWith('image/') ? (
+                          <img 
+                            src={`/api/files/${file.id}/preview`} 
+                            alt={file.original_name}
+                            style={{ width: '100%', height: 120, objectFit: 'cover' }}
+                          />
+                        ) : (
+                          <div className="file-type-icon">
+                            {file.mime_type?.startsWith('video/') ? '🎥' : 
+                             file.mime_type?.startsWith('audio/') ? '🎵' :
+                             file.mime_type?.includes('pdf') ? '📄' : '📁'}
+                          </div>
+                        )}
+                      </div>
+                    }
+                    actions={[
+                      <Tooltip title="下载">
+                        <DownloadOutlined onClick={() => handleDownload(file.id)} />
+                      </Tooltip>,
+                      <Tooltip title="编辑">
+                        <EditOutlined onClick={() => handleEdit(file)} />
+                      </Tooltip>,
+                      <Tooltip title={file.is_locked ? "解锁" : "锁定"}>
+                        {file.is_locked ? (
+                          <UnlockOutlined onClick={() => handleLock(file.id, false)} />
+                        ) : (
+                          <LockOutlined onClick={() => handleLock(file.id, true)} />
+                        )}
+                      </Tooltip>,
+                      <Popconfirm
+                        title="确定要删除这个文件吗？"
+                        onConfirm={() => handleDelete([file.id])}
+                        okText="确定"
+                        cancelText="取消"
+                      >
+                        <Tooltip title="删除">
+                          <DeleteOutlined />
+                        </Tooltip>
+                      </Popconfirm>
+                    ]}
+                  >
+                    <Card.Meta
+                      title={file.original_name}
+                      description={
+                        <div>
+                          <div>{formatFileSize(file.size)}</div>
+                          {file.description && (
+                            <div className="file-description">{file.description}</div>
+                          )}
+                        </div>
+                      }
+                    />
+                  </Card>
+                </Col>
+              ))}
+            </Row>
+          </div>
+        )}
       </Card>
 
       {/* 上传文件模态框 */}

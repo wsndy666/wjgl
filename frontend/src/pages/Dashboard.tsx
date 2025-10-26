@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react'
-import { Card, Row, Col, Statistic, List, Avatar, Typography, Spin } from 'antd'
+import { Card, Row, Col, Statistic, List, Avatar, Typography, Spin, Button } from 'antd'
 import { 
   FileOutlined, 
   FolderOutlined, 
   UserOutlined, 
   CloudOutlined,
   ClockCircleOutlined,
-  DownloadOutlined
+  DownloadOutlined,
+  UploadOutlined,
+  PlusOutlined
 } from '@ant-design/icons'
-import { useQuery } from 'react-query'
+import { useQuery, useQueryClient } from 'react-query'
+import { useNavigate } from 'react-router-dom'
 import useAuthStore from '../stores/authStore'
 import './Dashboard.css'
 
@@ -27,9 +30,11 @@ interface Activity {
 const Dashboard: React.FC = () => {
   const { user } = useAuthStore()
   const [userStats, setUserStats] = useState<any>(null)
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
 
   // 获取仪表盘统计数据
-  const { data: dashboardData, isLoading: dashboardLoading } = useQuery(
+  const { data: dashboardData, isLoading: dashboardLoading, refetch: refetchStats } = useQuery(
     'dashboardStats',
     async () => {
       const response = await fetch('/api/dashboard/stats', {
@@ -41,7 +46,9 @@ const Dashboard: React.FC = () => {
     },
     {
       enabled: !!user?.id,
-      refetchInterval: 30000 // 30秒刷新一次
+      refetchInterval: 10000, // 10秒刷新一次
+      refetchOnWindowFocus: true,
+      refetchOnMount: true
     }
   )
 
@@ -67,6 +74,20 @@ const Dashboard: React.FC = () => {
       setUserStats(dashboardData.userStats)
     }
   }, [dashboardData])
+
+  // 监听文件操作，自动刷新数据
+  useEffect(() => {
+    const handleFileOperation = () => {
+      refetchStats()
+    }
+
+    // 监听自定义事件
+    window.addEventListener('fileOperationComplete', handleFileOperation)
+    
+    return () => {
+      window.removeEventListener('fileOperationComplete', handleFileOperation)
+    }
+  }, [refetchStats])
 
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 B'
@@ -247,29 +268,35 @@ const Dashboard: React.FC = () => {
         <Col xs={24} lg={12}>
           <Card title="快速操作" className="quick-actions-card">
             <div className="quick-actions">
-              <div className="action-item">
-                <FileOutlined className="action-icon" />
-                <div className="action-content">
-                  <Title level={5}>上传文件</Title>
-                  <Text type="secondary">快速上传新文件</Text>
-                </div>
-              </div>
+              <Button 
+                type="primary" 
+                icon={<UploadOutlined />} 
+                size="large"
+                block
+                onClick={() => navigate('/files')}
+                style={{ marginBottom: 16 }}
+              >
+                上传文件
+              </Button>
               
-              <div className="action-item">
-                <FolderOutlined className="action-icon" />
-                <div className="action-content">
-                  <Title level={5}>创建文件夹</Title>
-                  <Text type="secondary">组织您的文件</Text>
-                </div>
-              </div>
+              <Button 
+                icon={<PlusOutlined />} 
+                size="large"
+                block
+                onClick={() => navigate('/files')}
+                style={{ marginBottom: 16 }}
+              >
+                创建文件夹
+              </Button>
               
-              <div className="action-item">
-                <DownloadOutlined className="action-icon" />
-                <div className="action-content">
-                  <Title level={5}>批量下载</Title>
-                  <Text type="secondary">下载多个文件</Text>
-                </div>
-              </div>
+              <Button 
+                icon={<DownloadOutlined />} 
+                size="large"
+                block
+                onClick={() => navigate('/files')}
+              >
+                批量下载
+              </Button>
             </div>
           </Card>
         </Col>

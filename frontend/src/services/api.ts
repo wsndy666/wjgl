@@ -158,8 +158,7 @@ export const userApi = {
 
 // 搜索相关API
 export const searchApi = {
-  search: async (query: string, filters?: any) => {
-    const params = { query, ...filters }
+  search: async (params: any) => {
     const response = await api.get('/search', { params })
     return response.data
   },

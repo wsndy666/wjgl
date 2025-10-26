@@ -210,12 +210,14 @@ router.get('/', authenticateToken, (req, res) => {
           const total = (fileCount?.total || 0) + (folderCount?.total || 0);
           
           res.json({
-            results,
-            pagination: {
+            success: true,
+            data: {
+              files: results.filter(item => !item.file_count), // 文件
+              folders: results.filter(item => item.file_count !== undefined), // 文件夹
+              total,
               page: parseInt(page),
               limit: parseInt(limit),
-              total,
-              pages: Math.ceil(total / limit)
+              totalPages: Math.ceil(total / limit)
             }
           });
         });
@@ -549,18 +551,48 @@ router.get('/suggestions', authenticateToken, (req, res) => {
 router.get('/popular', authenticateToken, (req, res) => {
   const { limit = 10 } = req.query;
   
-  // 这里可以实现基于用户搜索历史的统计
-  // 暂时返回一些示例数据
-  const popularSearches = [
-    { term: '文档', count: 15 },
-    { term: '图片', count: 12 },
-    { term: '视频', count: 8 },
-    { term: '工作', count: 6 },
-    { term: '项目', count: 5 }
-  ];
+  // 基于实际文件数据统计热门搜索词
+  const popularQuery = `
+    SELECT 
+      CASE 
+        WHEN f.mime_type LIKE 'image/%' THEN '图片'
+        WHEN f.mime_type LIKE 'video/%' THEN '视频'
+        WHEN f.mime_type LIKE 'audio/%' THEN '音频'
+        WHEN f.mime_type LIKE '%pdf%' THEN 'PDF'
+        WHEN f.mime_type LIKE '%word%' THEN 'Word'
+        WHEN f.mime_type LIKE '%excel%' THEN 'Excel'
+        WHEN f.mime_type LIKE '%powerpoint%' THEN 'PowerPoint'
+        ELSE '文档'
+      END as term,
+      COUNT(*) as count
+    FROM files f
+    WHERE f.user_id = ?
+    GROUP BY term
+    ORDER BY count DESC
+    LIMIT ?
+  `;
   
-  res.json({ 
-    popular: popularSearches.slice(0, parseInt(limit))
+  db.all(popularQuery, [req.user.id, parseInt(limit)], (err, results) => {
+    if (err) {
+      console.error('获取热门搜索词失败:', err);
+      return res.status(500).json({ error: '获取热门搜索词失败' });
+    }
+    
+    // 如果没有结果，返回默认数据
+    if (!results || results.length === 0) {
+      const defaultSearches = [
+        { term: '文档', count: 0 },
+        { term: '图片', count: 0 },
+        { term: '视频', count: 0 },
+        { term: '音频', count: 0 },
+        { term: 'PDF', count: 0 }
+      ];
+      return res.json({ popular: defaultSearches.slice(0, parseInt(limit)) });
+    }
+    
+    res.json({ 
+      popular: results
+    });
   });
 });
 

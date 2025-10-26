@@ -23,7 +23,9 @@ const storage = multer.diskStorage({
     cb(null, userDir);
   },
   filename: (req, file, cb) => {
-    const uniqueName = uuidv4() + path.extname(file.originalname);
+    // 保持原始文件名，避免乱码
+    const originalName = Buffer.from(file.originalname, 'latin1').toString('utf8');
+    const uniqueName = uuidv4() + path.extname(originalName);
     cb(null, uniqueName);
   }
 });
@@ -124,7 +126,7 @@ router.post('/upload', authenticateToken, upload.single('file'), (req, res) => {
   
   const fileData = {
     name: file.filename,
-    original_name: file.originalname,
+    original_name: Buffer.from(file.originalname, 'latin1').toString('utf8'),
     path: file.path,
     size: file.size,
     mime_type: file.mimetype,
@@ -188,7 +190,7 @@ router.post('/upload/batch', authenticateToken, upload.array('files', 50), (req,
   req.files.forEach((file, index) => {
     const fileData = {
       name: file.filename,
-      original_name: file.originalname,
+      original_name: Buffer.from(file.originalname, 'latin1').toString('utf8'),
       path: file.path,
       size: file.size,
       mime_type: file.mimetype,
