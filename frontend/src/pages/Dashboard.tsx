@@ -1,17 +1,13 @@
 import React, { useState, useEffect } from 'react'
-import { Card, Row, Col, Statistic, List, Avatar, Typography, Spin, Button } from 'antd'
+import { Card, Row, Col, Statistic, List, Avatar, Typography, Spin } from 'antd'
 import { 
   FileOutlined, 
   FolderOutlined, 
   UserOutlined, 
   CloudOutlined,
-  ClockCircleOutlined,
-  DownloadOutlined,
-  UploadOutlined,
-  PlusOutlined
+  ClockCircleOutlined
 } from '@ant-design/icons'
 import { useQuery } from 'react-query'
-import { useNavigate } from 'react-router-dom'
 import useAuthStore from '../stores/authStore'
 import './Dashboard.css'
 
@@ -30,7 +26,6 @@ interface Activity {
 const Dashboard: React.FC = () => {
   const { user } = useAuthStore()
   const [userStats, setUserStats] = useState<any>(null)
-  const navigate = useNavigate()
 
   // 获取仪表盘统计数据
   const { data: dashboardData, isLoading: dashboardLoading, refetch: refetchStats } = useQuery(
