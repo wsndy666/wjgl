@@ -159,21 +159,75 @@ router.get('/', authenticateToken, (req, res) => {
       countQuery = 'SELECT COUNT(*) as total FROM folders WHERE user_id = ? AND name LIKE ?';
       countParams = [req.user.id, searchTerm];
     } else {
-      // 合并查询 - 需要确保字段匹配
-      query = `
-        SELECT * FROM (
-          ${query}
-          UNION ALL
-          ${folderQuery}
-        ) ORDER BY relevance, created_at DESC
-      `;
-      params = [...params, searchTerm, req.user.id, searchTerm];
-      countQuery = `
-        (${countQuery})
-        UNION ALL
-        (SELECT COUNT(*) as total FROM folders WHERE user_id = ? AND name LIKE ?)
-      `;
-      countParams = [...countParams, req.user.id, searchTerm];
+      // 对于合并查询，分别执行文件和文件夹查询，然后在JavaScript中合并
+      const executeCombinedSearch = () => {
+        return new Promise((resolve, reject) => {
+          // 执行文件查询
+          db.all(query, params, (err, files) => {
+            if (err) {
+              return reject(err);
+            }
+            
+            // 执行文件夹查询
+            db.all(folderQuery, [searchTerm, req.user.id, searchTerm], (err, folders) => {
+              if (err) {
+                return reject(err);
+              }
+              
+              // 合并结果并按相关性排序
+              const allResults = [...files, ...folders]
+                .sort((a, b) => {
+                  if (a.relevance !== b.relevance) {
+                    return a.relevance - b.relevance;
+                  }
+                  return new Date(b.created_at) - new Date(a.created_at);
+                });
+              
+              resolve(allResults);
+            });
+          });
+        });
+      };
+      
+      // 执行合并搜索
+      executeCombinedSearch()
+        .then(results => {
+          // 获取总数
+          const fileCountQuery = countQuery;
+          const folderCountQuery = 'SELECT COUNT(*) as total FROM folders WHERE user_id = ? AND name LIKE ?';
+          
+          db.get(fileCountQuery, countParams, (err, fileCount) => {
+            if (err) {
+              return res.status(500).json({ error: '获取搜索结果总数失败' });
+            }
+            
+            db.get(folderCountQuery, [req.user.id, searchTerm], (err, folderCount) => {
+              if (err) {
+                return res.status(500).json({ error: '获取搜索结果总数失败' });
+              }
+              
+              const total = (fileCount?.total || 0) + (folderCount?.total || 0);
+              
+              res.json({
+                success: true,
+                data: {
+                  files: results.filter(item => !item.file_count), // 文件
+                  folders: results.filter(item => item.file_count !== undefined), // 文件夹
+                  total,
+                  page: parseInt(page),
+                  limit: parseInt(limit),
+                  totalPages: Math.ceil(total / limit)
+                }
+              });
+            });
+          });
+        })
+        .catch(err => {
+          console.error('搜索查询错误:', err);
+          res.status(500).json({ error: '搜索失败' });
+        });
+      
+      return; // 提前返回，避免执行下面的代码
     }
   }
   

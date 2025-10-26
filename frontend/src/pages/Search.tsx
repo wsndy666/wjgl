@@ -94,14 +94,15 @@ const SearchPage: React.FC = () => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }
 
-  const getFileIcon = (mimeType: string) => {
-    if (mimeType?.startsWith('image/')) return '🖼️'
-    if (mimeType?.startsWith('video/')) return '🎥'
-    if (mimeType?.startsWith('audio/')) return '🎵'
-    if (mimeType?.includes('pdf')) return '📄'
-    if (mimeType?.includes('word')) return '📝'
-    if (mimeType?.includes('excel')) return '📊'
-    if (mimeType?.includes('powerpoint')) return '📈'
+  const getFileIcon = (mimeType?: string) => {
+    if (!mimeType) return '📁'
+    if (mimeType.startsWith('image/')) return '🖼️'
+    if (mimeType.startsWith('video/')) return '🎥'
+    if (mimeType.startsWith('audio/')) return '🎵'
+    if (mimeType.includes('pdf')) return '📄'
+    if (mimeType.includes('word')) return '📝'
+    if (mimeType.includes('excel')) return '📊'
+    if (mimeType.includes('powerpoint')) return '📈'
     return '📁'
   }
 
@@ -122,7 +123,7 @@ const SearchPage: React.FC = () => {
             {record.description && (
               <div className="result-description">{record.description}</div>
             )}
-            {record.tags && (
+            {record.tags && record.tags.trim() && (
               <div className="result-tags">
                 {record.tags.split(',').map((tag, index) => (
                   <Tag key={index}>{tag.trim()}</Tag>
@@ -327,7 +328,7 @@ const SearchPage: React.FC = () => {
             </Title>
           </div>
           
-          {searchResults && searchResults.data && (searchResults.data.files.length > 0 || searchResults.data.folders.length > 0) ? (
+          {searchResults && searchResults.data && (searchResults.data.files?.length > 0 || searchResults.data.folders?.length > 0) ? (
             <Table
               columns={columns}
               dataSource={[...(searchResults.data.files || []), ...(searchResults.data.folders || [])]}
