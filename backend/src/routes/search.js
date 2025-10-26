@@ -241,81 +241,88 @@ router.get('/', authenticateToken, (req, res) => {
 });
 
 // 高级搜索
-router.post('/advanced', authenticateToken, [
-  body('query').optional().isLength({ max: 200 }).withMessage('搜索关键词不能超过200字符'),
-  body('type').optional().isIn(['all', 'files', 'folders']).withMessage('搜索类型无效'),
-  body('filters').optional().isObject().withMessage('过滤条件必须是对象')
-], (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
-
+router.get('/advanced', authenticateToken, (req, res) => {
   const { 
     query: searchQuery, 
     type = 'all', 
-    filters = {},
+    filters,
     page = 1, 
     limit = 20 
-  } = req.body;
+  } = req.query;
+  
+  console.log('Advanced search params:', { query: searchQuery, type, filters, page, limit });
+  
+  // Parse filters - Express query parser handles filters[mime_type]=image syntax
+  let parsedFilters = {};
+  if (filters) {
+    // If filters is already an object (parsed by Express from filters[prop]=value), use it directly
+    if (typeof filters === 'object' && !Array.isArray(filters)) {
+      parsedFilters = filters;
+    } else if (typeof filters === 'string') {
+      try {
+        parsedFilters = JSON.parse(filters);
+      } catch (e) {
+        // If parsing fails, treat as an empty object
+        parsedFilters = {};
+      }
+    }
+  }
+  
+  console.log('Parsed filters:', parsedFilters);
   
   const offset = (page - 1) * limit;
   
-  // 构建搜索条件
-  let whereConditions = ['user_id = ?'];
-  let params = [req.user.id];
-  
-  if (searchQuery && searchQuery.trim()) {
-    whereConditions.push('(name LIKE ? OR original_name LIKE ? OR description LIKE ?)');
-    const searchTerm = `%${searchQuery}%`;
-    params.push(searchTerm, searchTerm, searchTerm);
-  }
-  
-  // 应用过滤条件
-  if (filters.mime_type) {
-    whereConditions.push('mime_type LIKE ?');
-    params.push(`%${filters.mime_type}%`);
-  }
-  
-  if (filters.size_min) {
-    whereConditions.push('size >= ?');
-    params.push(parseInt(filters.size_min));
-  }
-  
-  if (filters.size_max) {
-    whereConditions.push('size <= ?');
-    params.push(parseInt(filters.size_max));
-  }
-  
-  if (filters.date_from) {
-    whereConditions.push('created_at >= ?');
-    params.push(filters.date_from);
-  }
-  
-  if (filters.date_to) {
-    whereConditions.push('created_at <= ?');
-    params.push(filters.date_to);
-  }
-  
-  if (filters.tags && filters.tags.length > 0) {
-    const tagPlaceholders = filters.tags.map(() => '?').join(',');
-    whereConditions.push(`id IN (SELECT file_id FROM file_tags WHERE tag IN (${tagPlaceholders}))`);
-    params.push(...filters.tags);
-  }
-  
-  if (filters.is_locked !== undefined) {
-    whereConditions.push('is_locked = ?');
-    params.push(filters.is_locked ? 1 : 0);
-  }
-  
-  const whereClause = whereConditions.join(' AND ');
-  
-  // 构建查询
-  let query = '';
-  let countQuery = '';
-  
+  // 分别处理文件和文件夹搜索
   if (type === 'files' || type === 'all') {
-    query = `
+    // 构建文件查询
+    let fileWhereConditions = ['f.user_id = ?'];
+    let fileParams = [req.user.id];
+    
+    if (searchQuery && searchQuery.trim()) {
+      fileWhereConditions.push('(f.name LIKE ? OR f.original_name LIKE ? OR f.description LIKE ?)');
+      const searchTerm = `%${searchQuery}%`;
+      fileParams.push(searchTerm, searchTerm, searchTerm);
+    }
+    
+    if (parsedFilters.mime_type) {
+      fileWhereConditions.push('f.mime_type LIKE ?');
+      fileParams.push(`%${parsedFilters.mime_type}%`);
+    }
+    
+    if (parsedFilters.size_min) {
+      fileWhereConditions.push('f.size >= ?');
+      fileParams.push(parseInt(parsedFilters.size_min));
+    }
+    
+    if (parsedFilters.size_max) {
+      fileWhereConditions.push('f.size <= ?');
+      fileParams.push(parseInt(parsedFilters.size_max));
+    }
+    
+    if (parsedFilters.date_from) {
+      fileWhereConditions.push('f.created_at >= ?');
+      fileParams.push(parsedFilters.date_from);
+    }
+    
+    if (parsedFilters.date_to) {
+      fileWhereConditions.push('f.created_at <= ?');
+      fileParams.push(parsedFilters.date_to);
+    }
+    
+    if (parsedFilters.tags && parsedFilters.tags.length > 0) {
+      const tagPlaceholders = parsedFilters.tags.map(() => '?').join(',');
+      fileWhereConditions.push(`f.id IN (SELECT file_id FROM file_tags WHERE tag IN (${tagPlaceholders}))`);
+      fileParams.push(...parsedFilters.tags);
+    }
+    
+    if (parsedFilters.is_locked !== undefined) {
+      fileWhereConditions.push('f.is_locked = ?');
+      fileParams.push(parsedFilters.is_locked ? 1 : 0);
+    }
+    
+    const fileWhereClause = fileWhereConditions.join(' AND ');
+    
+    let fileQuery = `
       SELECT f.*, ft.tags
       FROM files f
       LEFT JOIN (
@@ -323,85 +330,141 @@ router.post('/advanced', authenticateToken, [
         FROM file_tags 
         GROUP BY file_id
       ) ft ON f.id = ft.file_id
-      WHERE ${whereClause}
+      WHERE ${fileWhereClause}
       ORDER BY f.created_at DESC
+      LIMIT ? OFFSET ?
     `;
     
-    countQuery = `SELECT COUNT(*) as total FROM files WHERE ${whereClause}`;
-  }
-  
-  if (type === 'folders' || type === 'all') {
-    const folderWhereClause = whereClause.replace(/original_name|description|mime_type|size|is_locked/g, 'name');
+    let fileCountQuery = `SELECT COUNT(*) as total FROM files f WHERE ${fileWhereClause}`;
     
-    if (type === 'folders') {
-      query = `
-        SELECT f.*, 
-               (SELECT COUNT(*) FROM files WHERE folder_id = f.id) as file_count,
-               (SELECT COUNT(*) FROM folders WHERE parent_id = f.id) as subfolder_count
-        FROM folders f
-        WHERE ${folderWhereClause}
-        ORDER BY f.name
-      `;
+    fileParams.push(parseInt(limit), offset);
+    
+    if (type === 'all') {
+      // 处理文件夹查询
+      let folderWhereConditions = ['f.user_id = ?'];
+      let folderParams = [req.user.id];
       
-      countQuery = `SELECT COUNT(*) as total FROM folders WHERE ${folderWhereClause}`;
-    } else {
-      // 合并查询
-      query = `
-        ${query}
-        UNION ALL
+      if (searchQuery && searchQuery.trim()) {
+        folderWhereConditions.push('f.name LIKE ?');
+        const searchTerm = `%${searchQuery}%`;
+        folderParams.push(searchTerm);
+      }
+      
+      const folderWhereClause = folderWhereConditions.join(' AND ');
+      
+      let folderQuery = `
         SELECT f.*, 
                (SELECT COUNT(*) FROM files WHERE folder_id = f.id) as file_count,
                (SELECT COUNT(*) FROM folders WHERE parent_id = f.id) as subfolder_count,
                NULL as tags
         FROM folders f
         WHERE ${folderWhereClause}
-        ORDER BY created_at DESC
+        ORDER BY f.created_at DESC
+        LIMIT ? OFFSET ?
       `;
-    }
-  }
-  
-  // 添加分页
-  query += ' LIMIT ? OFFSET ?';
-  params.push(parseInt(limit), offset);
-  
-  // 执行查询
-  db.all(query, params, (err, results) => {
-    if (err) {
-      console.error('高级搜索查询错误:', err);
-      return res.status(500).json({ error: '高级搜索失败' });
-    }
-    
-    // 获取总数
-    if (type === 'all') {
-      // 分别计算文件和文件夹数量
-      const fileCountQuery = countQuery;
-      const folderCountQuery = countQuery.replace('files', 'folders');
       
-      db.get(fileCountQuery, params.slice(0, -2), (err, fileCount) => {
+      let folderCountQuery = `SELECT COUNT(*) as total FROM folders f WHERE ${folderWhereClause}`;
+      folderParams.push(parseInt(limit), offset);
+      
+      // 执行两个查询
+      db.all(fileQuery, fileParams, (err, files) => {
         if (err) {
-          return res.status(500).json({ error: '获取搜索结果总数失败' });
+          console.error('文件搜索查询错误:', err);
+          return res.status(500).json({ error: '高级搜索失败' });
         }
         
-        db.get(folderCountQuery, params.slice(0, -2), (err, folderCount) => {
+        db.all(folderQuery, folderParams, (err, folders) => {
+          if (err) {
+            console.error('文件夹搜索查询错误:', err);
+            return res.status(500).json({ error: '高级搜索失败' });
+          }
+          
+          db.get(fileCountQuery, fileParams.slice(0, -2), (err, fileCount) => {
+            if (err) {
+              return res.status(500).json({ error: '获取搜索结果总数失败' });
+            }
+            
+            db.get(folderCountQuery, folderParams.slice(0, -2), (err, folderCount) => {
+              if (err) {
+                return res.status(500).json({ error: '获取搜索结果总数失败' });
+              }
+              
+              const total = (fileCount?.total || 0) + (folderCount?.total || 0);
+              const results = [...files, ...folders];
+              
+              res.json({
+                results,
+                pagination: {
+                  page: parseInt(page),
+                  limit: parseInt(limit),
+                  total,
+                  pages: Math.ceil(total / limit)
+                }
+              });
+            });
+          });
+        });
+      });
+    } else {
+      // 仅搜索文件
+      db.all(fileQuery, fileParams, (err, results) => {
+        if (err) {
+          console.error('高级搜索查询错误:', err);
+          return res.status(500).json({ error: '高级搜索失败' });
+        }
+        
+        db.get(fileCountQuery, fileParams.slice(0, -2), (err, countResult) => {
           if (err) {
             return res.status(500).json({ error: '获取搜索结果总数失败' });
           }
-          
-          const total = (fileCount?.total || 0) + (folderCount?.total || 0);
           
           res.json({
             results,
             pagination: {
               page: parseInt(page),
               limit: parseInt(limit),
-              total,
-              pages: Math.ceil(total / limit)
+              total: countResult.total,
+              pages: Math.ceil(countResult.total / limit)
             }
           });
         });
       });
-    } else {
-      db.get(countQuery, params.slice(0, -2), (err, countResult) => {
+    }
+  } else if (type === 'folders') {
+    // 仅搜索文件夹
+    let folderWhereConditions = ['f.user_id = ?'];
+    let folderParams = [req.user.id];
+    
+    if (searchQuery && searchQuery.trim()) {
+      folderWhereConditions.push('f.name LIKE ?');
+      const searchTerm = `%${searchQuery}%`;
+      folderParams.push(searchTerm);
+    }
+    
+    const folderWhereClause = folderWhereConditions.join(' AND ');
+    
+    let folderQuery = `
+      SELECT f.*, 
+             (SELECT COUNT(*) FROM files WHERE folder_id = f.id) as file_count,
+             (SELECT COUNT(*) FROM folders WHERE parent_id = f.id) as subfolder_count,
+             NULL as tags
+      FROM folders f
+      WHERE ${folderWhereClause}
+      ORDER BY f.created_at DESC
+      LIMIT ? OFFSET ?
+    `;
+    
+    let folderCountQuery = `SELECT COUNT(*) as total FROM folders f WHERE ${folderWhereClause}`;
+    
+    folderParams.push(parseInt(limit), offset);
+    
+    db.all(folderQuery, folderParams, (err, results) => {
+      if (err) {
+        console.error('高级搜索查询错误:', err);
+        return res.status(500).json({ error: '高级搜索失败' });
+      }
+      
+      db.get(folderCountQuery, folderParams.slice(0, -2), (err, countResult) => {
         if (err) {
           return res.status(500).json({ error: '获取搜索结果总数失败' });
         }
@@ -416,8 +479,8 @@ router.post('/advanced', authenticateToken, [
           }
         });
       });
-    }
-  });
+    });
+  }
 });
 
 // 获取搜索建议
