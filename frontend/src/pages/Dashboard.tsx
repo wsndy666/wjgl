@@ -25,7 +25,7 @@ interface Activity {
 }
 
 const Dashboard: React.FC = () => {
-  const { user } = useAuthStore()
+  const { user, token } = useAuthStore()
   const [userStats, setUserStats] = useState<any>(null)
 
   // 获取仪表盘统计数据
@@ -33,7 +33,7 @@ const Dashboard: React.FC = () => {
     'dashboardStats',
     dashboardApi.getStats,
     {
-      enabled: !!user?.token,
+      enabled: !!token,
       refetchInterval: 10000, // 10秒刷新一次
       refetchOnWindowFocus: true,
       refetchOnMount: true
@@ -45,7 +45,7 @@ const Dashboard: React.FC = () => {
     'dashboardActivity',
     dashboardApi.getActivity,
     {
-      enabled: !!user?.token,
+      enabled: !!token,
       refetchInterval: 30000
     }
   )
