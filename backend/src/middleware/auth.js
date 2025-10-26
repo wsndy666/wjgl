@@ -8,14 +8,25 @@ const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
+  console.log('认证请求:', {
+    url: req.url,
+    method: req.method,
+    hasAuthHeader: !!authHeader,
+    hasToken: !!token
+  });
+
   if (!token) {
+    console.log('认证失败: 缺少token');
     return res.status(401).json({ error: '访问令牌缺失' });
   }
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) {
+      console.log('认证失败: token无效', err.message);
       return res.status(403).json({ error: '访问令牌无效' });
     }
+    
+    console.log('认证成功:', { userId: user.id, username: user.username, role: user.role });
     req.user = user;
     next();
   });

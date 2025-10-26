@@ -137,27 +137,36 @@ app.get('/api/dashboard/activity', authenticateToken, (req, res) => {
   const userId = req.user.id;
   const isAdmin = req.user.role === 'admin';
   
-  let query = `
-    SELECT ol.*, u.username
-    FROM operation_logs ol
-    LEFT JOIN users u ON u.id = ol.user_id
-  `;
-  
-  const params = [];
-  
-  if (!isAdmin) {
-    query += ' WHERE ol.user_id = ?';
-    params.push(userId);
-  }
-  
-  query += ' ORDER BY ol.created_at DESC LIMIT 10';
-  
-  db.all(query, params, (err, activities) => {
-    if (err) {
-      return res.status(500).json({ error: '获取活动记录失败' });
+  // 检查operation_logs表是否存在
+  db.get("SELECT name FROM sqlite_master WHERE type='table' AND name='operation_logs'", (err, table) => {
+    if (err || !table) {
+      // 如果表不存在，返回空活动列表
+      return res.json({ activities: [] });
     }
     
-    res.json({ activities });
+    let query = `
+      SELECT ol.*, u.username
+      FROM operation_logs ol
+      LEFT JOIN users u ON u.id = ol.user_id
+    `;
+    
+    const params = [];
+    
+    if (!isAdmin) {
+      query += ' WHERE ol.user_id = ?';
+      params.push(userId);
+    }
+    
+    query += ' ORDER BY ol.created_at DESC LIMIT 10';
+    
+    db.all(query, params, (err, activities) => {
+      if (err) {
+        console.error('获取活动记录失败:', err);
+        return res.json({ activities: [] });
+      }
+      
+      res.json({ activities: activities || [] });
+    });
   });
 });
 

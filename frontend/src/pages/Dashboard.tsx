@@ -9,6 +9,7 @@ import {
 } from '@ant-design/icons'
 import { useQuery } from 'react-query'
 import useAuthStore from '../stores/authStore'
+import { dashboardApi } from '../services/api'
 import './Dashboard.css'
 
 const { Title, Text } = Typography
@@ -30,16 +31,9 @@ const Dashboard: React.FC = () => {
   // 获取仪表盘统计数据
   const { data: dashboardData, isLoading: dashboardLoading, refetch: refetchStats } = useQuery(
     'dashboardStats',
-    async () => {
-      const response = await fetch('/api/dashboard/stats', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth-storage')?.replace(/"/g, '')}`
-        }
-      });
-      return response.json();
-    },
+    dashboardApi.getStats,
     {
-      enabled: !!user?.id,
+      enabled: !!user?.token,
       refetchInterval: 10000, // 10秒刷新一次
       refetchOnWindowFocus: true,
       refetchOnMount: true
@@ -49,16 +43,9 @@ const Dashboard: React.FC = () => {
   // 获取最近活动
   const { data: activityData, isLoading: activityLoading } = useQuery(
     'dashboardActivity',
-    async () => {
-      const response = await fetch('/api/dashboard/activity', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth-storage')?.replace(/"/g, '')}`
-        }
-      });
-      return response.json();
-    },
+    dashboardApi.getActivity,
     {
-      enabled: !!user?.id,
+      enabled: !!user?.token,
       refetchInterval: 30000
     }
   )

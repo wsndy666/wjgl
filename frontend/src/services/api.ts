@@ -192,5 +192,17 @@ export const folderApi = {
   }
 }
 
+// 仪表盘相关API
+export const dashboardApi = {
+  getStats: async () => {
+    const response = await api.get('/dashboard/stats')
+    return response.data
+  },
+  getActivity: async () => {
+    const response = await api.get('/dashboard/activity')
+    return response.data
+  }
+}
+
 // 导出api实例
 export { api }

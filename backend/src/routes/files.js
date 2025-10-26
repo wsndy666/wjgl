@@ -88,71 +88,88 @@ router.get('/', authenticateToken, (req, res) => {
     folderParams.push(searchTerm);
   }
   
-  // 合并查询
-  const combinedQuery = `
-    ${fileQuery}
-    UNION ALL
-    ${folderQuery}
-    ORDER BY created_at DESC
-    LIMIT ? OFFSET ?
-  `;
+  // 分别执行查询，然后合并结果
+  const executeQueries = () => {
+    return new Promise((resolve, reject) => {
+      // 执行文件查询
+      db.all(fileQuery, fileParams, (err, files) => {
+        if (err) {
+          return reject(err);
+        }
+        
+        // 执行文件夹查询
+        db.all(folderQuery, folderParams, (err, folders) => {
+          if (err) {
+            return reject(err);
+          }
+          
+          // 合并结果并按创建时间排序
+          const allItems = [...files, ...folders]
+            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+            .slice(offset, offset + parseInt(limit));
+          
+          resolve(allItems);
+        });
+      });
+    });
+  };
   
-  const combinedParams = [...fileParams, ...folderParams, parseInt(limit), offset];
-  
-  db.all(combinedQuery, combinedParams, (err, items) => {
-    if (err) {
-      return res.status(500).json({ error: '数据库查询错误' });
-    }
-    
-    // 获取总数
-    let fileCountQuery = 'SELECT COUNT(*) as total FROM files WHERE user_id = ?';
-    let folderCountQuery = 'SELECT COUNT(*) as total FROM folders WHERE user_id = ?';
-    const fileCountParams = [req.user.id];
-    const folderCountParams = [req.user.id];
-    
-    if (folder_id) {
-      fileCountQuery += ' AND folder_id = ?';
-      folderCountQuery += ' AND parent_id = ?';
-      fileCountParams.push(folder_id);
-      folderCountParams.push(folder_id);
-    } else if (folder_id === null || folder_id === 'null') {
-      fileCountQuery += ' AND folder_id IS NULL';
-      folderCountQuery += ' AND parent_id IS NULL';
-    }
-    
-    if (search) {
-      const searchTerm = `%${search}%`;
-      fileCountQuery += ' AND (name LIKE ? OR original_name LIKE ? OR description LIKE ?)';
-      folderCountQuery += ' AND name LIKE ?';
-      fileCountParams.push(searchTerm, searchTerm, searchTerm);
-      folderCountParams.push(searchTerm);
-    }
-    
-    // 分别获取文件和文件夹数量
-    db.get(fileCountQuery, fileCountParams, (err, fileCount) => {
-      if (err) {
-        return res.status(500).json({ error: '数据库查询错误' });
+  // 执行查询并返回结果
+  executeQueries()
+    .then(items => {
+      // 获取总数
+      let fileCountQuery = 'SELECT COUNT(*) as total FROM files WHERE user_id = ?';
+      let folderCountQuery = 'SELECT COUNT(*) as total FROM folders WHERE user_id = ?';
+      const fileCountParams = [req.user.id];
+      const folderCountParams = [req.user.id];
+      
+      if (folder_id) {
+        fileCountQuery += ' AND folder_id = ?';
+        folderCountQuery += ' AND parent_id = ?';
+        fileCountParams.push(folder_id);
+        folderCountParams.push(folder_id);
+      } else if (folder_id === null || folder_id === 'null') {
+        fileCountQuery += ' AND folder_id IS NULL';
+        folderCountQuery += ' AND parent_id IS NULL';
       }
       
-      db.get(folderCountQuery, folderCountParams, (err, folderCount) => {
+      if (search) {
+        const searchTerm = `%${search}%`;
+        fileCountQuery += ' AND (name LIKE ? OR original_name LIKE ? OR description LIKE ?)';
+        folderCountQuery += ' AND name LIKE ?';
+        fileCountParams.push(searchTerm, searchTerm, searchTerm);
+        folderCountParams.push(searchTerm);
+      }
+      
+      // 分别获取文件和文件夹数量
+      db.get(fileCountQuery, fileCountParams, (err, fileCount) => {
         if (err) {
           return res.status(500).json({ error: '数据库查询错误' });
         }
         
-        const total = (fileCount?.total || 0) + (folderCount?.total || 0);
-        
-        res.json({
-          files: items,
-          pagination: {
-            page: parseInt(page),
-            limit: parseInt(limit),
-            total,
-            pages: Math.ceil(total / limit)
+        db.get(folderCountQuery, folderCountParams, (err, folderCount) => {
+          if (err) {
+            return res.status(500).json({ error: '数据库查询错误' });
           }
+          
+          const total = (fileCount?.total || 0) + (folderCount?.total || 0);
+          
+          res.json({
+            files: items,
+            pagination: {
+              page: parseInt(page),
+              limit: parseInt(limit),
+              total,
+              pages: Math.ceil(total / limit)
+            }
+          });
         });
       });
+    })
+    .catch(err => {
+      console.error('文件查询错误:', err);
+      res.status(500).json({ error: '数据库查询错误' });
     });
-  });
 });
 
 // 上传单个文件
