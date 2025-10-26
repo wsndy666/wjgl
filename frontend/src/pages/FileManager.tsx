@@ -545,21 +545,21 @@ const FileManager: React.FC = () => {
                     }
                     actions={[
                       <Tooltip title="下载">
-                        <DownloadOutlined onClick={() => handleDownload(file.id)} />
+                        <DownloadOutlined onClick={() => handleDownload(file)} />
                       </Tooltip>,
                       <Tooltip title="编辑">
-                        <EditOutlined onClick={() => handleEdit(file)} />
+                        <EditOutlined onClick={() => handleEditFile(file)} />
                       </Tooltip>,
                       <Tooltip title={file.is_locked ? "解锁" : "锁定"}>
                         {file.is_locked ? (
-                          <UnlockOutlined onClick={() => handleLock(file.id, false)} />
+                          <UnlockOutlined onClick={() => lockFileMutation.mutate({ id: file.id, isLocked: false })} />
                         ) : (
-                          <LockOutlined onClick={() => handleLock(file.id, true)} />
+                          <LockOutlined onClick={() => lockFileMutation.mutate({ id: file.id, isLocked: true })} />
                         )}
                       </Tooltip>,
                       <Popconfirm
                         title="确定要删除这个文件吗？"
-                        onConfirm={() => handleDelete([file.id])}
+                        onConfirm={() => deleteFileMutation.mutate([file.id])}
                         okText="确定"
                         cancelText="取消"
                       >

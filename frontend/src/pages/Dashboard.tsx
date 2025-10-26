@@ -10,7 +10,7 @@ import {
   UploadOutlined,
   PlusOutlined
 } from '@ant-design/icons'
-import { useQuery, useQueryClient } from 'react-query'
+import { useQuery } from 'react-query'
 import { useNavigate } from 'react-router-dom'
 import useAuthStore from '../stores/authStore'
 import './Dashboard.css'
@@ -31,7 +31,6 @@ const Dashboard: React.FC = () => {
   const { user } = useAuthStore()
   const [userStats, setUserStats] = useState<any>(null)
   const navigate = useNavigate()
-  const queryClient = useQueryClient()
 
   // 获取仪表盘统计数据
   const { data: dashboardData, isLoading: dashboardLoading, refetch: refetchStats } = useQuery(
