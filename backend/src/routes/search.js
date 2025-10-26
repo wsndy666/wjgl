@@ -60,12 +60,11 @@ router.get('/', authenticateToken, (req, res) => {
         FROM file_tags 
         GROUP BY file_id
       ) ft ON f.id = ft.file_id
-      WHERE f.user_id = ?
+      WHERE f.user_id = ? AND (f.name LIKE ? OR f.original_name LIKE ? OR f.description LIKE ?)
     `;
     
     const searchTerm = `%${q}%`;
-    fileQuery += ' AND (f.name LIKE ? OR f.original_name LIKE ? OR f.description LIKE ?)';
-    params.push(searchTerm, searchTerm, searchTerm, searchTerm);
+    params.push(searchTerm, searchTerm, searchTerm, req.user.id, searchTerm, searchTerm, searchTerm);
     
     // 添加过滤条件
     if (mime_type) {
@@ -97,8 +96,6 @@ router.get('/', authenticateToken, (req, res) => {
       fileQuery += ' AND f.id IN (SELECT file_id FROM file_tags WHERE tag LIKE ?)';
       params.push(`%${tags}%`);
     }
-    
-    fileQuery += ' ORDER BY relevance, f.created_at DESC';
     
     query = fileQuery;
     countQuery = `
@@ -155,7 +152,6 @@ router.get('/', authenticateToken, (req, res) => {
     `;
     
     const searchTerm = `%${q}%`;
-    folderQuery += ' ORDER BY relevance, f.name';
     
     if (type === 'folders') {
       query = folderQuery;
@@ -163,12 +159,13 @@ router.get('/', authenticateToken, (req, res) => {
       countQuery = 'SELECT COUNT(*) as total FROM folders WHERE user_id = ? AND name LIKE ?';
       countParams = [req.user.id, searchTerm];
     } else {
-      // 合并查询
+      // 合并查询 - 需要确保字段匹配
       query = `
-        ${query}
-        UNION ALL
-        ${folderQuery}
-        ORDER BY relevance, created_at DESC
+        SELECT * FROM (
+          ${query}
+          UNION ALL
+          ${folderQuery}
+        ) ORDER BY relevance, created_at DESC
       `;
       params = [...params, searchTerm, req.user.id, searchTerm];
       countQuery = `

@@ -41,13 +41,14 @@ const upload = multer({
   }
 });
 
-// 获取文件列表
+// 获取文件列表（包含文件夹）
 router.get('/', authenticateToken, (req, res) => {
   const { folder_id, page = 1, limit = 20, search } = req.query;
   const offset = (page - 1) * limit;
   
-  let query = `
-    SELECT f.*, ft.tags 
+  // 获取文件
+  let fileQuery = `
+    SELECT f.*, ft.tags, 'file' as type
     FROM files f
     LEFT JOIN (
       SELECT file_id, GROUP_CONCAT(tag) as tags 
@@ -57,59 +58,98 @@ router.get('/', authenticateToken, (req, res) => {
     WHERE f.user_id = ?
   `;
   
-  const params = [req.user.id];
+  // 获取文件夹
+  let folderQuery = `
+    SELECT f.*, NULL as tags, 'folder' as type,
+           (SELECT COUNT(*) FROM files WHERE folder_id = f.id) as file_count,
+           (SELECT COUNT(*) FROM folders WHERE parent_id = f.id) as subfolder_count
+    FROM folders f
+    WHERE f.user_id = ?
+  `;
+  
+  const fileParams = [req.user.id];
+  const folderParams = [req.user.id];
   
   if (folder_id) {
-    query += ' AND f.folder_id = ?';
-    params.push(folder_id);
+    fileQuery += ' AND f.folder_id = ?';
+    folderQuery += ' AND f.parent_id = ?';
+    fileParams.push(folder_id);
+    folderParams.push(folder_id);
   } else if (folder_id === null || folder_id === 'null') {
-    query += ' AND f.folder_id IS NULL';
+    fileQuery += ' AND f.folder_id IS NULL';
+    folderQuery += ' AND f.parent_id IS NULL';
   }
   
   if (search) {
-    query += ' AND (f.name LIKE ? OR f.original_name LIKE ? OR f.description LIKE ?)';
     const searchTerm = `%${search}%`;
-    params.push(searchTerm, searchTerm, searchTerm);
+    fileQuery += ' AND (f.name LIKE ? OR f.original_name LIKE ? OR f.description LIKE ?)';
+    folderQuery += ' AND f.name LIKE ?';
+    fileParams.push(searchTerm, searchTerm, searchTerm);
+    folderParams.push(searchTerm);
   }
   
-  query += ' ORDER BY f.created_at DESC LIMIT ? OFFSET ?';
-  params.push(parseInt(limit), offset);
+  // 合并查询
+  const combinedQuery = `
+    ${fileQuery}
+    UNION ALL
+    ${folderQuery}
+    ORDER BY created_at DESC
+    LIMIT ? OFFSET ?
+  `;
   
-  db.all(query, params, (err, files) => {
+  const combinedParams = [...fileParams, ...folderParams, parseInt(limit), offset];
+  
+  db.all(combinedQuery, combinedParams, (err, items) => {
     if (err) {
       return res.status(500).json({ error: '数据库查询错误' });
     }
     
     // 获取总数
-    let countQuery = 'SELECT COUNT(*) as total FROM files WHERE user_id = ?';
-    const countParams = [req.user.id];
+    let fileCountQuery = 'SELECT COUNT(*) as total FROM files WHERE user_id = ?';
+    let folderCountQuery = 'SELECT COUNT(*) as total FROM folders WHERE user_id = ?';
+    const fileCountParams = [req.user.id];
+    const folderCountParams = [req.user.id];
     
     if (folder_id) {
-      countQuery += ' AND folder_id = ?';
-      countParams.push(folder_id);
+      fileCountQuery += ' AND folder_id = ?';
+      folderCountQuery += ' AND parent_id = ?';
+      fileCountParams.push(folder_id);
+      folderCountParams.push(folder_id);
     } else if (folder_id === null || folder_id === 'null') {
-      countQuery += ' AND folder_id IS NULL';
+      fileCountQuery += ' AND folder_id IS NULL';
+      folderCountQuery += ' AND parent_id IS NULL';
     }
     
     if (search) {
-      countQuery += ' AND (name LIKE ? OR original_name LIKE ? OR description LIKE ?)';
       const searchTerm = `%${search}%`;
-      countParams.push(searchTerm, searchTerm, searchTerm);
+      fileCountQuery += ' AND (name LIKE ? OR original_name LIKE ? OR description LIKE ?)';
+      folderCountQuery += ' AND name LIKE ?';
+      fileCountParams.push(searchTerm, searchTerm, searchTerm);
+      folderCountParams.push(searchTerm);
     }
     
-    db.get(countQuery, countParams, (err, countResult) => {
+    // 分别获取文件和文件夹数量
+    db.get(fileCountQuery, fileCountParams, (err, fileCount) => {
       if (err) {
         return res.status(500).json({ error: '数据库查询错误' });
       }
       
-      res.json({
-        files,
-        pagination: {
-          page: parseInt(page),
-          limit: parseInt(limit),
-          total: countResult.total,
-          pages: Math.ceil(countResult.total / limit)
+      db.get(folderCountQuery, folderCountParams, (err, folderCount) => {
+        if (err) {
+          return res.status(500).json({ error: '数据库查询错误' });
         }
+        
+        const total = (fileCount?.total || 0) + (folderCount?.total || 0);
+        
+        res.json({
+          files: items,
+          pagination: {
+            page: parseInt(page),
+            limit: parseInt(limit),
+            total,
+            pages: Math.ceil(total / limit)
+          }
+        });
       });
     });
   });

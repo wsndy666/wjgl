@@ -263,39 +263,22 @@ const Dashboard: React.FC = () => {
           </Col>
         )}
 
-        {/* 快速操作 */}
+        {/* 系统信息 */}
         <Col xs={24} lg={12}>
-          <Card title="快速操作" className="quick-actions-card">
-            <div className="quick-actions">
-              <Button 
-                type="primary" 
-                icon={<UploadOutlined />} 
-                size="large"
-                block
-                onClick={() => navigate('/files')}
-                style={{ marginBottom: 16 }}
-              >
-                上传文件
-              </Button>
-              
-              <Button 
-                icon={<PlusOutlined />} 
-                size="large"
-                block
-                onClick={() => navigate('/files')}
-                style={{ marginBottom: 16 }}
-              >
-                创建文件夹
-              </Button>
-              
-              <Button 
-                icon={<DownloadOutlined />} 
-                size="large"
-                block
-                onClick={() => navigate('/files')}
-              >
-                批量下载
-              </Button>
+          <Card title="系统信息" className="system-info-card">
+            <div className="system-info">
+              <div className="info-item">
+                <Text strong>系统版本：</Text>
+                <Text>v1.0.0</Text>
+              </div>
+              <div className="info-item">
+                <Text strong>最后更新：</Text>
+                <Text>{new Date().toLocaleDateString()}</Text>
+              </div>
+              <div className="info-item">
+                <Text strong>存储状态：</Text>
+                <Text type="success">正常</Text>
+              </div>
             </div>
           </Card>
         </Col>
